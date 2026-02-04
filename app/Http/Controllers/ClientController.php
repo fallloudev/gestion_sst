@@ -1,0 +1,96 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+
+use App\Models\Client;
+use App\Constant;
+
+class ClientController extends Controller
+{
+   
+    public function listClient(Request $request)
+    {
+        $query = Client::query();
+
+        // 🔍 Recherche
+        if ($request->filled('search')) {
+            $query->where('nom', 'like', '%' . $request->search . '%')
+                ->orWhere('type', 'like', '%' . $request->search . '%')
+                ->orWhere('telephone', 'like', '%' . $request->search . '%');
+        }
+
+        $clients = $query
+            ->orderBy('nom')
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('pages.client.listClient', compact('clients'));
+    }
+
+
+    public function addClient()
+    {
+        $typeClients = Constant::TYPES_CLIENT;
+        return view('pages.client.addClient', compact('typeClients'));
+    }
+
+    public function storeClient(Request $request)
+    {
+        $validated = $request->validate([
+            'nom' => 'required|string|max:255',
+            'type' => 'required|string',
+            'telephone' => 'required|string|max:50',
+            'adresse' => 'nullable|string|max:255',
+        ]);
+
+        Client::create($validated);
+
+        return redirect()
+            ->route('client.list')
+            ->with('success', 'Client ajouté avec succès');
+    }
+
+    public function editClient($id)
+    {
+        $client = Client::findOrFail($id);
+
+        return view('pages.client.editClient', [
+            'client' => $client,
+            'typesClients' => Constant::TYPES_CLIENT,
+        ]);
+    }
+
+    public function updateClient(Request $request, $id)
+    {
+        $client = Client::findOrFail($id);
+
+        $validated = $request->validate([
+            'nom' => 'required|string|max:255',
+            'type' => 'required|string',
+            'telephone' => 'required|string|max:30',
+            'adresse' => 'nullable|string|max:255',
+        ]);
+
+        $client->update($validated);
+
+        return redirect()
+            ->route('client.list')
+            ->with('success', 'Client modifié avec succès');
+    }
+
+    public function deleteClient($id)
+    {
+        $client = Client::findOrFail($id);
+
+        $client->delete();
+
+        return redirect()
+            ->route('client.list')
+            ->with('warning', 'Client supprimé avec succès');
+    }
+
+
+
+}

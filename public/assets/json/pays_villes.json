@@ -1,0 +1,82 @@
+{
+    "Sénégal": [
+        "Dakar",
+        "Thiès",
+        "Saint-Louis",
+        "Ziguinchor",
+        "Kaolack",
+        "Tambacounda"
+    ],
+    "France": [
+        "Paris",
+        "Lyon",
+        "Marseille",
+        "Toulouse",
+        "Nice",
+        "Strasbourg"
+    ],
+    "Allemagne": [
+        "Berlin",
+        "Munich",
+        "Hambourg",
+        "Francfort",
+        "Cologne",
+        "Stuttgart"
+    ],
+    "États-Unis": [
+        "New York",
+        "Los Angeles",
+        "Chicago",
+        "Houston",
+        "Phoenix",
+        "Philadelphia"
+    ],
+    "Canada": [
+        "Toronto",
+        "Vancouver",
+        "Montréal",
+        "Calgary",
+        "Ottawa",
+        "Québec"
+    ],
+    "Maroc": [
+        "Casablanca",
+        "Rabat",
+        "Marrakech",
+        "Fès",
+        "Tanger",
+        "Agadir"
+    ],
+    "Côte d'Ivoire": [
+        "Abidjan",
+        "Bouaké",
+        "Yamoussoukro",
+        "Daloa",
+        "San-Pédro",
+        "Korhogo"
+    ],
+    "Nigeria": [
+        "Lagos",
+        "Abuja",
+        "Kano",
+        "Ibadan",
+        "Port Harcourt",
+        "Benin City"
+    ],
+    "Brésil": [
+        "São Paulo",
+        "Rio de Janeiro",
+        "Brasília",
+        "Salvador",
+        "Fortaleza",
+        "Belo Horizonte"
+    ],
+    "Inde": [
+        "Mumbai",
+        "Delhi",
+        "Bangalore",
+        "Hyderabad",
+        "Chennai",
+        "Kolkata"
+    ]
+}
