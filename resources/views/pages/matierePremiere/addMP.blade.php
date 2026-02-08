@@ -116,7 +116,7 @@
                         </div>
 
                         {{-- Date de péremption --}}
-                        <div class="col-md-6">
+                        {{-- <div class="col-md-6">
                             <div class="form-floating">
                                 <input
                                     type="date"
@@ -130,7 +130,7 @@
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
-                        </div>
+                        </div> --}}
 
                     </div>
 

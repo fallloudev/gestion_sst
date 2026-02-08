@@ -81,7 +81,7 @@
                                     <input type="number"
                                         class="form-control @error('quantite_produite') is-invalid @enderror"
                                         name="quantite_produite" placeholder="Quantité produite">
-                                    <label>Quantité prévue</label>
+                                    <label>Quantité produite</label>
                                     @error('quantite_produite')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror

@@ -99,7 +99,7 @@ class MatierePremiereController extends Controller
             'type' => 'required|string',
             'unite' => 'required|string|max:50',
             'seuil_min' => 'required|integer|min:0',
-            'peremption_date' => 'required|date|after:today',
+            // 'peremption_date' => 'required|date|after:today',
         ]);
 
         MatierePremiere::create([
@@ -107,7 +107,7 @@ class MatierePremiereController extends Controller
             'type'     => $validated['type'],
             'unite'  => $validated['unite'],
             'seuil_min'   => $validated['seuil_min'],
-            'peremption_date' => $validated['peremption_date'],
+            // 'peremption_date' => $validated['peremption_date'],
         ]);
 
         return redirect()->route('mp.list')->with('success', 'Matiére Premiére créée avec succès');
@@ -130,7 +130,7 @@ class MatierePremiereController extends Controller
             'type' => 'required|string',
             'unite' => 'required|string|max:50',
             'seuil_min' => 'required|integer|min:0',
-            'peremption_date' => 'required|date|after:today',
+            // 'peremption_date' => 'required|date|after:today',
         ]);
 
         $mp->update([
@@ -138,7 +138,7 @@ class MatierePremiereController extends Controller
             'type'     => $validated['type'],
             'unite'  => $validated['unite'],
             'seuil_min'   => $validated['seuil_min'],
-            'peremption_date' => $validated['peremption_date'],
+            // 'peremption_date' => $validated['peremption_date'],
         ]);
 
         return redirect()

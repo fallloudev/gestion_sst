@@ -59,7 +59,7 @@
                                 <th>Type</th>
                                 <th>Unité</th>
                                 <th>Seuil min</th>
-                                <th>Péremption</th>
+                                {{-- <th>Péremption</th> --}}
                                 <th class="text-end">Actions</th>
                             </tr>
                         </thead>
@@ -79,13 +79,13 @@
                                             {{ $mp->seuil_min }}
                                         </span>
                                     </td>
-                                    <td>
+                                    {{-- <td>
                                         @if(\Carbon\Carbon::parse($mp->peremption_date)->isPast())
                                             <span class="badge bg-danger">Périmée</span>
                                         @else
                                             {{ \Carbon\Carbon::parse($mp->peremption_date)->format('d/m/Y') }}
                                         @endif
-                                    </td>
+                                    </td> --}}
 
                                     {{-- Actions --}}
                                     <td class="text-end">
