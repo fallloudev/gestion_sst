@@ -10,45 +10,99 @@ use App\Models\Facture;
 use App\Models\Paiement;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Auth;
 
 class PaiementController extends Controller
 {
 
     
+    // public function listPaiement(Request $request)
+    // {
+    //     $query = Paiement::with([
+    //         'facture.commande.client'
+    //     ]);
+    
+    //     // 🔍 Recherche (client / référence / numéro facture)
+    //     if ($request->filled('search')) {
+    //         $search = $request->search;
+    
+    //         $query->where(function ($q) use ($search) {
+    //             $q->where('reference', 'like', "%{$search}%")
+    //               ->orWhereHas('facture', function ($q2) use ($search) {
+    //                   $q2->where('numero', 'like', "%{$search}%");
+    //               })
+    //               ->orWhereHas('facture.commande.client', function ($q3) use ($search) {
+    //                   $q3->where('nom', 'like', "%{$search}%");
+    //               });
+    //         });
+    //     }
+    
+    //     // 🎚 Filtre par mode de paiement
+    //     if ($request->filled('mode')) {
+    //         $query->where('mode_paiement', $request->mode);
+    //     }
+    
+    //     // ⏱️ Ordre : plus récent d’abord
+    //     $paiements = $query
+    //         ->orderByDesc('date')
+    //         ->paginate(10)
+    //         ->withQueryString();
+    
+    //     return view('pages.paiement.listPaiement', compact('paiements'));
+    // }
+
+
+    // private function authorizePaiement(Paiement $paiement)
+    // {
+    //     if (
+    //         Auth::user()->role->libelle === Constant::ROLES['COMMERCIAL'] &&
+    //         $paiement->facture->commande->user_id !== Auth::id()
+    //     ) {
+    //         abort(403);
+    //     }
+    // }
+
     public function listPaiement(Request $request)
     {
         $query = Paiement::with([
             'facture.commande.client'
         ]);
-    
-        // 🔍 Recherche (client / référence / numéro facture)
-        if ($request->filled('search')) {
-            $search = $request->search;
-    
-            $query->where(function ($q) use ($search) {
-                $q->where('reference', 'like', "%{$search}%")
-                  ->orWhereHas('facture', function ($q2) use ($search) {
-                      $q2->where('numero', 'like', "%{$search}%");
-                  })
-                  ->orWhereHas('facture.commande.client', function ($q3) use ($search) {
-                      $q3->where('nom', 'like', "%{$search}%");
-                  });
+
+        // 🔐 FILTRAGE PAR RÔLE
+        if (Auth::user()->role->libelle === Constant::ROLES['COMMERCIAL']) {
+            $query->whereHas('facture.commande', function ($q) {
+                $q->where('user_id', Auth::id());
             });
         }
-    
-        // 🎚 Filtre par mode de paiement
+
+        // 🔍 Recherche (client / référence / facture)
+        if ($request->filled('search')) {
+            $search = $request->search;
+
+            $query->where(function ($q) use ($search) {
+                $q->where('reference', 'like', "%{$search}%")
+                ->orWhereHas('facture', function ($q2) use ($search) {
+                    $q2->where('numero', 'like', "%{$search}%");
+                })
+                ->orWhereHas('facture.commande.client', function ($q3) use ($search) {
+                    $q3->where('nom', 'like', "%{$search}%");
+                });
+            });
+        }
+
+        // 🎚 Mode de paiement
         if ($request->filled('mode')) {
             $query->where('mode_paiement', $request->mode);
         }
-    
-        // ⏱️ Ordre : plus récent d’abord
+
         $paiements = $query
             ->orderByDesc('date')
             ->paginate(10)
             ->withQueryString();
-    
+
         return view('pages.paiement.listPaiement', compact('paiements'));
     }
+
 
 
     public function showPaiement($paiementId)
@@ -57,6 +111,7 @@ class PaiementController extends Controller
             'facture.commande.client',
             'facture.commande.lignes.produit'
         ])->findOrFail($paiementId);
+        // $this->authorizePaiement($paiement);
 
         return view('pages.paiement.showPaiement', compact('paiement'));
     }
@@ -75,6 +130,7 @@ class PaiementController extends Controller
                 ->route('commande.list')
                 ->with('warning', 'Cette facture est déjà payée');
         }
+        // $this->authorizePaiement($facture);
 
         return view('pages.paiement.addPaiement', [
             'facture' => $facture,
@@ -92,9 +148,11 @@ class PaiementController extends Controller
             'date' => 'required|date',
             'reference' => 'nullable|string'
         ]);
+
     
         try {
             DB::transaction(function () use ($validated) {
+                
     
                 // 🔒 Verrouiller la facture
                 $facture = Facture::with('commande.lignes.produit')
@@ -171,7 +229,7 @@ class PaiementController extends Controller
         }
     
         return redirect()
-            ->route('commande.list')
+            ->route('paiement.list')
             ->with('success', 'Paiement validé, facture réglée et stock mis à jour.');
     }
 
@@ -188,6 +246,7 @@ class PaiementController extends Controller
             compact('paiement')
         )->setPaper('a4', 'portrait');
 
+        // $this->authorizePaiement($paiement);
         return $pdf->download(
             'PAIEMENT-' . $paiement->facture->numero . '.pdf'
         );
@@ -199,6 +258,8 @@ class PaiementController extends Controller
             'facture.commande.client',
             'facture.commande.lignes.produit'
         ])->findOrFail($id);
+
+        // $this->authorizePaiement($paiement);
 
         return view(
             'pages.paiement.pdfPaiement',

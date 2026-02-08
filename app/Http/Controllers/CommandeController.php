@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\DB;
 use App\Constant;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
+
 
 
 
@@ -32,50 +34,109 @@ class CommandeController extends Controller
     //     return view('pages.commande.listCommande', compact('commandes'));
     // }
     
+    // public function listCommande()
+    // {
+    //     $commandes = Commande::with([
+    //             'client',
+    //             'lignes',
+    //             'facture.paiements'
+    //         ])
+    //         // 1️⃣ Factures PAYÉES d’abord
+    //         ->orderByDesc(
+    //             DB::raw("
+    //                 (SELECT statut 
+    //                  FROM factures 
+    //                  WHERE factures.commande_id = commandes.id 
+    //                  LIMIT 1) = 'PAYEE'
+    //             ")
+    //         )
+    
+    //         // 2️⃣ Numéro de facture (si existe)
+    //         ->orderByDesc(
+    //             DB::raw("
+    //                 (SELECT numero 
+    //                  FROM factures 
+    //                  WHERE factures.commande_id = commandes.id 
+    //                  LIMIT 1)
+    //             ")
+    //         )
+    
+    //         // 3️⃣ Date de commande
+    //         ->orderByDesc('commandes.date')
+    
+    //         ->paginate(10);
+    
+    //     return view('pages.commande.listCommande', compact('commandes'));
+    // }
+
+
     public function listCommande()
     {
-        $commandes = Commande::with([
-                'client',
-                'lignes',
-                'facture.paiements'
-            ])
-            // 1️⃣ Factures PAYÉES d’abord
+        $user = Auth::user();
+
+        $query = Commande::with([
+            'client',
+            'lignes',
+            'facture.paiements'
+        ]);
+
+        // 🔐 FILTRAGE PAR RÔLE
+        if ($user->role->libelle === Constant::ROLES['COMMERCIAL']) {
+            $query->where('user_id', $user->id);
+        }
+
+        // ADMIN / ROOT : pas de filtre
+        // PRODUCTION : lecture seule (pas de filtre)
+
+        $commandes = $query
             ->orderByDesc(
                 DB::raw("
                     (SELECT statut 
-                     FROM factures 
-                     WHERE factures.commande_id = commandes.id 
-                     LIMIT 1) = 'PAYEE'
+                    FROM factures 
+                    WHERE factures.commande_id = commandes.id 
+                    LIMIT 1) = 'PAYEE'
                 ")
             )
-    
-            // 2️⃣ Numéro de facture (si existe)
             ->orderByDesc(
                 DB::raw("
                     (SELECT numero 
-                     FROM factures 
-                     WHERE factures.commande_id = commandes.id 
-                     LIMIT 1)
+                    FROM factures 
+                    WHERE factures.commande_id = commandes.id 
+                    LIMIT 1)
                 ")
             )
-    
-            // 3️⃣ Date de commande
             ->orderByDesc('commandes.date')
-    
             ->paginate(10);
-    
+
         return view('pages.commande.listCommande', compact('commandes'));
     }
+
     
 
+
+    // public function showCommande($id)
+    // {
+    //     $commande = Commande::with(['client', 'lignes.produit'])
+    //         ->findOrFail($id);
+
+    //     return view('pages.commande.showCommande', compact('commande'));
+    // }
 
     public function showCommande($id)
     {
         $commande = Commande::with(['client', 'lignes.produit'])
             ->findOrFail($id);
 
+        if (
+            Auth::user()->role->libelle === Constant::ROLES['COMMERCIAL']
+            && $commande->user_id !== Auth::id()
+        ) {
+            abort(403);
+        }
+
         return view('pages.commande.showCommande', compact('commande'));
     }
+
 
     public function addCommande()
     {
@@ -103,6 +164,7 @@ class CommandeController extends Controller
                 'date' => $validated['date'],
                 'statut' => 'EN_ATTENTE',
                 'total' => 0,
+                'user_id' => Auth::user()->id,
             ]);
 
             $total = 0;
@@ -139,6 +201,13 @@ class CommandeController extends Controller
     public function editCommande($id)
     {
         $commande = Commande::with('lignes')->findOrFail($id);
+        if (
+            Auth::user()->role->libelle === Constant::ROLES['COMMERCIAL']
+            && $commande->user_id !== Auth::id()
+        ) {
+            abort(403);
+        }
+        
 
         return view('pages.commande.editCommande', [
             'commande' => $commande,
@@ -150,7 +219,13 @@ class CommandeController extends Controller
     public function updateCommande(Request $request, $id)
     {
         $commande = Commande::findOrFail($id);
-
+        if (
+            Auth::user()->role->libelle === Constant::ROLES['COMMERCIAL']
+            && $commande->user_id !== Auth::id()
+        ) {
+            abort(403);
+        }
+        
         $validated = $request->validate([
             'client_id' => 'required|exists:clients,id',
             'date' => 'required|date',
@@ -199,6 +274,14 @@ class CommandeController extends Controller
 
     public function deleteCommande($id)
     {
+        $commande = Commande::findOrFail($id);
+        if (
+            Auth::user()->role->libelle === Constant::ROLES['COMMERCIAL']
+            && $commande->user_id !== Auth::id()
+        ) {
+            abort(403);
+        }
+        
         try {
             DB::transaction(function () use ($id) {
 

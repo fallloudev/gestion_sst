@@ -4,7 +4,8 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-
+use App\Models\Produit;
+use App\Models\Entrepot;
 class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;
@@ -19,6 +20,9 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             UserSeeder::class,
             MatierePremiereSeeder::class,
+            ProduitSeeder::class,
+            EntrepotSeeder::class,
         ]);
+
     }
 }

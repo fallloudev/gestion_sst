@@ -6,19 +6,49 @@ use Illuminate\Http\Request;
 
 use App\Models\Client;
 use App\Constant;
+use Illuminate\Support\Facades\Auth;
+
 
 class ClientController extends Controller
 {
    
+    // public function listClient(Request $request)
+    // {
+    //     $query = Client::query();
+
+    //     // 🔍 Recherche
+    //     if ($request->filled('search')) {
+    //         $query->where('nom', 'like', '%' . $request->search . '%')
+    //             ->orWhere('type', 'like', '%' . $request->search . '%')
+    //             ->orWhere('telephone', 'like', '%' . $request->search . '%');
+    //     }
+
+    //     $clients = $query
+    //         ->orderBy('nom')
+    //         ->paginate(10)
+    //         ->withQueryString();
+
+    //     return view('pages.client.listClient', compact('clients'));
+    // }
+
+
     public function listClient(Request $request)
     {
         $query = Client::query();
+        $user = Auth::user();
+
+        // 🔐 FILTRAGE PAR RÔLE
+        if ($user->role->libelle === Constant::ROLES['COMMERCIAL']) {
+            $query->where('user_id', $user->id);
+        }
 
         // 🔍 Recherche
         if ($request->filled('search')) {
-            $query->where('nom', 'like', '%' . $request->search . '%')
+            $query->where(function ($q) use ($request) {
+                $q->where('nom', 'like', '%' . $request->search . '%')
                 ->orWhere('type', 'like', '%' . $request->search . '%')
                 ->orWhere('telephone', 'like', '%' . $request->search . '%');
+            });
         }
 
         $clients = $query
@@ -45,7 +75,13 @@ class ClientController extends Controller
             'adresse' => 'nullable|string|max:255',
         ]);
 
-        Client::create($validated);
+        Client::create([
+            'nom' => $validated['nom'],
+            'type' => $validated['type'],
+            'telephone' => $validated['telephone'],
+            'adresse' => $validated['adresse'],
+            'user_id' => Auth::user()->id,
+        ]);
 
         return redirect()
             ->route('client.list')

@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\Facture;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Auth;
+use App\Constant;
 
 
 class FactureController extends Controller
@@ -56,10 +58,43 @@ class FactureController extends Controller
     }
 
 
+    // public function listFacture(Request $request)
+    // {
+    //     $query = Facture::with('commande.client');
+
+    //     if ($request->filled('search')) {
+    //         $query->where('numero', 'like', '%' . $request->search . '%')
+    //             ->orWhereHas('commande.client', function ($q) use ($request) {
+    //                 $q->where('nom', 'like', '%' . $request->search . '%');
+    //             });
+    //     }
+
+    //     if ($request->filled('statut')) {
+    //         $query->where('statut', $request->statut);
+    //     }
+
+    //     $factures = $query
+    //         ->orderByDesc('date')
+    //         ->paginate(10)
+    //         ->withQueryString();
+
+    //     return view('pages.facture.listFacture', compact('factures'));
+    // }
+
+
+
     public function listFacture(Request $request)
     {
         $query = Facture::with('commande.client');
 
+        // 🔐 FILTRAGE PAR RÔLE
+        if (Auth::user()->role->libelle === Constant::ROLES['COMMERCIAL']) {
+            $query->whereHas('commande', function ($q) {
+                $q->where('user_id', Auth::id());
+            });
+        }
+
+        // 🔍 Recherche
         if ($request->filled('search')) {
             $query->where('numero', 'like', '%' . $request->search . '%')
                 ->orWhereHas('commande.client', function ($q) use ($request) {
@@ -67,6 +102,7 @@ class FactureController extends Controller
                 });
         }
 
+        // 🏷️ Statut
         if ($request->filled('statut')) {
             $query->where('statut', $request->statut);
         }
@@ -78,5 +114,6 @@ class FactureController extends Controller
 
         return view('pages.facture.listFacture', compact('factures'));
     }
+
 
 }

@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('statut');
             $table->string('total');
             $table->dateTime('date');
+            $table->foreignId('user_id');
             $table->timestamps();
         });
     }

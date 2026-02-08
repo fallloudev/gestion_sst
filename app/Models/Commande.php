@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Commande extends Model
 {
     protected $fillable = [
-        'client_id','nom','date','statut','total'
+        'client_id','nom','date','statut','total','user_id'
     ];
 
     public function lignes()
@@ -24,6 +24,10 @@ class Commande extends Model
     public function facture()
     {
         return $this->hasOne(Facture::class);
+    }
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 
 }
