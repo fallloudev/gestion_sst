@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('type');
             $table->string('unite');
             $table->integer('seuil_min');
-            $table->date('peremption_date');
+            $table->date('peremption_date')->nullable();
             $table->timestamps();
         });
     }
