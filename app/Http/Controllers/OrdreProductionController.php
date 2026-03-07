@@ -216,6 +216,7 @@ class OrdreProductionController extends Controller
         'date' => 'required|date',
     ]);
 
+
     try {
         DB::transaction(function () use ($validated, $request) {
 
@@ -244,11 +245,18 @@ class OrdreProductionController extends Controller
 
                 $stockMp = Stock::where('matiere_premiere_id', $mpId)
                     ->lockForUpdate()
-                    ->firstOrFail();
+                    ->first();
+
+                    $matiere = MatierePremiere::find($mpId);
+
+                    if (!$stockMp) {
+                        throw new \Exception("Le stock de la matière première '{$matiere->nom}' n'existe pas.");
+                    }
+
 
                 if ($qte > $stockMp->quantite) {
                     throw new \Exception(
-                        "Stock insuffisant pour la matière première ID {$mpId}"
+                        "Stock insuffisant pour la matière première '{$matiere->nom}'"
                     );
                 }
 

@@ -41,7 +41,7 @@ class Constant
     ];
 
     const TYPE_PRODUITS = [
-        'TORREFIE' => 'TORIFIE',
+        'TORREFIE' => 'TORRÉFIÉ',
         'MOULU' => 'MOULU'
     ];
 
