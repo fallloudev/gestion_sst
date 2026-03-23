@@ -102,7 +102,8 @@
                                         </td>
 
                                         <td>
-                                            {{ $mouvement->stock->entrepot->nom }}
+                                            {{-- {{ $mouvement->stock->entrepot->nom }} --}}
+                                            {{ $mouvement->stock?->entrepot?->nom ?? 'Non défini' }}
                                         </td>
 
 
