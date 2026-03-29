@@ -8,12 +8,12 @@ class Constant
     const ENTREPRISE = [
         'nom' => 'SOCIETE SENEGALAISE DE TORREFACTION',
         'adresse' => 'Dakar, Sénégal',
-        'telephone' => '+221 77 000 00 00',
-        'email' => 'contact@sst.sn',
+        'telephone' => '+221 78 811 55 55 / +221 77 095 51 66',
+        'email' => 'info@sst.sn',
         'site' => 'www.sst.sn',
-        'ninea' => '123456789',
-        'rc' => 'SN-DKR-2026-B-00001',
-        'logo' => 'assets/images/logo.png', // stocké dans public/
+        'ninea' => '009450496',
+        'rc' => 'SN DKR 2022 B 18865',
+        'logo' => 'assets/images/logo.jpeg'
     ];
     
     const ROLES = [

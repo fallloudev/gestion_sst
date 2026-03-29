@@ -75,7 +75,7 @@
 {{-- 🔹 EN-TÊTE ENTREPRISE --}}
 <div class="header">
     <div class="header-left">
-        <img src="{{ public_path($entreprise['logo']) }}"  class="logo-lg img-fluid"
+        <img src="{{ public_path('assets/images/logo.jpeg') }}"  class="logo-lg img-fluid"
         style="max-width: 100px; height: auto;">
     </div>
 

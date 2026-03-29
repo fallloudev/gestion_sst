@@ -139,99 +139,162 @@ class PaiementController extends Controller
     }
 
 
-    public function storePaiement(Request $request)
-    {
-        $validated = $request->validate([
-            'facture_id' => 'required|exists:factures,id',
-            'mode_paiement' => 'required|string',
-            'montant' => 'required|numeric|min:1',
-            'date' => 'required|date',
-            'reference' => 'nullable|string'
-        ]);
+    // public function storePaiement(Request $request)
+    // {
+    //     $validated = $request->validate([
+    //         'facture_id' => 'required|exists:factures,id',
+    //         'mode_paiement' => 'required|string',
+    //         'montant' => 'required|numeric|min:1',
+    //         'date' => 'required|date',
+    //         'reference' => 'nullable|string'
+    //     ]);
 
     
-        try {
-            DB::transaction(function () use ($validated) {
+    //     try {
+    //         DB::transaction(function () use ($validated) {
                 
     
-                // 🔒 Verrouiller la facture
-                $facture = Facture::with('commande.lignes.produit')
-                    ->lockForUpdate()
-                    ->findOrFail($validated['facture_id']);
+    //             // 🔒 Verrouiller la facture
+    //             $facture = Facture::with('commande.lignes.produit')
+    //                 ->lockForUpdate()
+    //                 ->findOrFail($validated['facture_id']);
     
-                // 🚫 Bloquer double paiement
-                if ($facture->statut === 'PAYEE') {
-                    throw new \Exception('Cette facture a déjà été réglée.');
-                }
+    //             // 🚫 Bloquer double paiement
+    //             if ($facture->statut === 'PAYEE') {
+    //                 throw new \Exception('Cette facture a déjà été réglée.');
+    //             }
     
-                // ❗ Vérification du montant (paiement total uniquement)
-                if ($validated['montant'] != $facture->total_ttc) {
-                    throw new \Exception(
-                        'Le montant payé doit être égal au total de la facture.'
-                    );
-                }
+    //             // ❗ Vérification du montant (paiement total uniquement)
+    //             if ($validated['montant'] != $facture->total_ttc) {
+    //                 throw new \Exception(
+    //                     'Le montant payé doit être égal au total de la facture.'
+    //                 );
+    //             }
     
-                // 1️⃣ Enregistrer le paiement
+    //             // 1️⃣ Enregistrer le paiement
+    //             Paiement::create([
+    //                 'facture_id'   => $facture->id,
+    //                 'mode_paiement'=> $validated['mode_paiement'],
+    //                 'montant'      => $validated['montant'],
+    //                 'reference'    => $validated['reference'],
+    //                 'date'         => $validated['date'],
+    //             ]);
+    
+    //             // 2️⃣ SORTIE DE STOCK PRODUITS (UNE SEULE FOIS)
+    //             foreach ($facture->commande->lignes as $ligne) {
+    
+    //                 $stock = Stock::where('produit_id', $ligne->produit_id)
+    //                     ->lockForUpdate()
+    //                     ->first();
+    
+    //                 if (!$stock) {
+    //                     throw new \Exception(
+    //                         "Aucun stock trouvé pour le produit {$ligne->produit->nom}"
+    //                     );
+    //                 }
+    
+    //                 if ($stock->quantite < $ligne->quantite) {
+    //                     throw new \Exception(
+    //                         "Stock insuffisant pour le produit {$ligne->produit->nom}"
+    //                     );
+    //                 }
+    
+    //                 // ➖ Mouvement SORTIE
+    //                 MouvementStock::create([
+    //                     'stock_id' => $stock->id,
+    //                     'type'     => Constant::TYPESMOUVEMENT['SORTIE'],
+    //                     'quantite' => $ligne->quantite,
+    //                     'reference'=> $facture->numero, // FAC-2026-0001
+    //                     'date'     => $validated['date'],
+    //                 ]);
+    
+    //                 // ➖ Mise à jour stock
+    //                 $stock->quantite -= $ligne->quantite;
+    //                 $stock->save();
+    //             }
+    
+    //             // 3️⃣ Marquer la facture comme PAYÉE
+    //             $facture->update([
+    //                 'statut' => Constant::FACTURE['PAYEE']
+    //             ]);
+
+    //             // 2️⃣ Mettre à jour la commande
+    //             $facture->commande->update([
+    //                 'statut' => 'PAYER'
+    //             ]);
+    //         });
+    
+    //     } catch (\Exception $e) {
+    //         return back()->with('error', $e->getMessage());
+    //     }
+    
+    //     return redirect()
+    //         ->route('paiement.list')
+    //         ->with('success', 'Paiement validé, facture réglée et stock mis à jour.');
+    // }
+
+    public function storePaiement(Request $request)
+{
+    $validated = $request->validate([
+        'facture_id' => 'required|exists:factures,id',
+        'mode_paiement' => 'required|string',
+        'montant' => 'required|numeric|min:1',
+        'date' => 'required|date',
+        'reference' => 'nullable|string',
+    ]);
+
+    try {
+        DB::transaction(function () use ($validated) {
+
+            $facture = Facture::with('commande')
+                ->lockForUpdate()
+                ->findOrFail($validated['facture_id']);
+
+            // Bloquer double paiement
+            if ($facture->statut === Constant::FACTURE['PAYEE']) {
+                throw new \Exception('Cette facture a déjà été réglée.');
+            }
+
+            // Paiement total uniquement
+            if ((float) $validated['montant'] !== (float) $facture->total_ttc) {
+                throw new \Exception('Le montant payé doit être égal au total de la facture.');
+            }
+
+                // 🧠 Générer référence si vide
+                $referencePaiement = !empty($validated['reference'])
+                ? $validated['reference']
+                : 'PMT-' . $facture->numero;
+    
+                // 1️⃣ Enregistrer paiement
                 Paiement::create([
-                    'facture_id'   => $facture->id,
-                    'mode_paiement'=> $validated['mode_paiement'],
-                    'montant'      => $validated['montant'],
-                    'reference'    => $validated['reference'],
-                    'date'         => $validated['date'],
-                ]);
-    
-                // 2️⃣ SORTIE DE STOCK PRODUITS (UNE SEULE FOIS)
-                foreach ($facture->commande->lignes as $ligne) {
-    
-                    $stock = Stock::where('produit_id', $ligne->produit_id)
-                        ->lockForUpdate()
-                        ->first();
-    
-                    if (!$stock) {
-                        throw new \Exception(
-                            "Aucun stock trouvé pour le produit {$ligne->produit->nom}"
-                        );
-                    }
-    
-                    if ($stock->quantite < $ligne->quantite) {
-                        throw new \Exception(
-                            "Stock insuffisant pour le produit {$ligne->produit->nom}"
-                        );
-                    }
-    
-                    // ➖ Mouvement SORTIE
-                    MouvementStock::create([
-                        'stock_id' => $stock->id,
-                        'type'     => Constant::TYPESMOUVEMENT['SORTIE'],
-                        'quantite' => $ligne->quantite,
-                        'reference'=> $facture->numero, // FAC-2026-0001
-                        'date'     => $validated['date'],
-                    ]);
-    
-                    // ➖ Mise à jour stock
-                    $stock->quantite -= $ligne->quantite;
-                    $stock->save();
-                }
-    
-                // 3️⃣ Marquer la facture comme PAYÉE
-                $facture->update([
-                    'statut' => Constant::FACTURE['PAYEE']
+                    'facture_id'    => $facture->id,
+                    'mode_paiement' => $validated['mode_paiement'],
+                    'montant'       => $validated['montant'],
+                    'reference'     => $referencePaiement,
+                    'date'          => $validated['date'],
                 ]);
 
-                // 2️⃣ Mettre à jour la commande
-                $facture->commande->update([
-                    'statut' => 'PAYER'
-                ]);
-            });
-    
-        } catch (\Exception $e) {
-            return back()->with('error', $e->getMessage());
-        }
-    
-        return redirect()
-            ->route('paiement.list')
-            ->with('success', 'Paiement validé, facture réglée et stock mis à jour.');
+            // Marquer la facture comme payée
+            $facture->update([
+                'statut' => Constant::FACTURE['PAYEE'],
+            ]);
+
+            // Mettre à jour la commande
+            $facture->commande->update([
+                'statut' => 'PAYEE',
+            ]);
+        });
+
+    } catch (\Exception $e) {
+        return back()
+            ->withInput()
+            ->with('error', $e->getMessage());
     }
+
+    return redirect()
+        ->route('paiement.list')
+        ->with('success', 'Paiement validé avec succès.');
+}
 
 
     public function paiementPdf($id)
@@ -259,11 +322,14 @@ class PaiementController extends Controller
             'facture.commande.lignes.produit'
         ])->findOrFail($id);
 
-        // $this->authorizePaiement($paiement);
-
-        return view(
+        $pdf = Pdf::loadView(
             'pages.paiement.pdfPaiement',
             compact('paiement')
+        )->setPaper('a4', 'portrait');
+        // $this->authorizePaiement($paiement);
+
+        return $pdf->stream(
+            'PAIEMENT-' . $paiement->facture->numero . '.pdf'
         );
     }
 

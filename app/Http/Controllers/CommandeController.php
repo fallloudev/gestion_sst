@@ -345,6 +345,7 @@ class CommandeController extends Controller
     {
         $commande = Commande::with(['client', 'lignes.produit', 'facture'])
             ->findOrFail($id);
+        
 
         // 🔒 Sécurité : déjà facturée
         if ($commande->facture) {
@@ -352,6 +353,7 @@ class CommandeController extends Controller
                 ->route('commande.list')
                 ->with('warning', 'Cette commande est déjà facturée');
         }
+        
 
         return view('pages.commande.factureCommande', compact('commande'));
     }
@@ -376,43 +378,121 @@ class CommandeController extends Controller
     }
 
 
+    // public function storeFactureCommande($id)
+    // {
+    //     $commande = Commande::with('facture')->findOrFail($id);
+
+    //     if ($commande->facture) {
+    //         return redirect()
+    //             ->route('commande.list')
+    //             ->with('warning', 'Commande déjà facturée');
+    //     }
+
+    //     DB::transaction(function () use ($commande) {
+
+    //         $reference = $this->generateFactureReference();
+
+    //         // 1️⃣ Créer la facture
+    //         Facture::create([
+    //             'commande_id' => $commande->id,
+    //             'date' => now(),
+    //             'tva' => 0,
+    //             // 'total_ht' => $commande->total,
+    //             'total_ttc' => $commande->total,
+    //             'numero' => $reference,
+    //             'statut' => Constant::FACTURE['NO_PAYEE']
+
+
+    //         ]);
+
+    //         // 2️⃣ Mettre à jour la commande
+    //         $commande->update([
+    //             'statut' => 'FACTUREE'
+    //         ]);
+    //     });
+
+    //     return redirect()
+    //         ->route('commande.list')
+    //         ->with('success', 'Commande facturée avec succès');
+    // }
+
     public function storeFactureCommande($id)
-    {
-        $commande = Commande::with('facture')->findOrFail($id);
+{
+    $commande = Commande::with([
+        'facture',
+        'lignes.produit'
+    ])->findOrFail($id);
 
-        if ($commande->facture) {
-            return redirect()
-                ->route('commande.list')
-                ->with('warning', 'Commande déjà facturée');
-        }
+    if ($commande->facture) {
+        return redirect()
+            ->route('commande.list')
+            ->with('warning', 'Commande déjà facturée');
+    }
 
+    try {
         DB::transaction(function () use ($commande) {
 
             $reference = $this->generateFactureReference();
 
-            // 1️⃣ Créer la facture
+            // 1️⃣ Vérifier le stock et faire la sortie
+            foreach ($commande->lignes as $ligne) {
+
+                $stock = Stock::where('produit_id', $ligne->produit_id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$stock) {
+                    throw new \Exception(
+                        "Aucun stock trouvé pour le produit {$ligne->produit->nom}"
+                    );
+                }
+
+                if ($stock->quantite < $ligne->quantite) {
+                    throw new \Exception(
+                        "Stock insuffisant pour le produit {$ligne->produit->nom}"
+                    );
+                }
+
+                // Mouvement de stock SORTIE
+                MouvementStock::create([
+                    'stock_id'   => $stock->id,
+                    'type'       => Constant::TYPESMOUVEMENT['SORTIE'],
+                    'quantite'   => $ligne->quantite,
+                    'reference'  => $reference,
+                    'date'       => now(),
+                ]);
+
+                // Mise à jour du stock
+                $stock->quantite -= $ligne->quantite;
+                $stock->save();
+            }
+
+            // 2️⃣ Créer la facture
             Facture::create([
                 'commande_id' => $commande->id,
-                'date' => now(),
-                'tva' => 0,
-                // 'total_ht' => $commande->total,
-                'total_ttc' => $commande->total,
-                'numero' => $reference,
-                'statut' => Constant::FACTURE['NO_PAYEE']
-
-
+                'date'        => now(),
+                'tva'         => 0,
+                'total_ttc'   => $commande->total,
+                'numero'      => $reference,
+                'statut'      => Constant::FACTURE['NO_PAYEE'],
             ]);
 
-            // 2️⃣ Mettre à jour la commande
+            // 3️⃣ Mettre à jour la commande
             $commande->update([
                 'statut' => 'FACTUREE'
             ]);
         });
 
+    } catch (\Exception $e) {
         return redirect()
             ->route('commande.list')
-            ->with('success', 'Commande facturée avec succès');
+            ->with('error', $e->getMessage());
     }
+
+    return redirect()
+        ->route('commande.list')
+        ->with('success', 'Commande facturée et stock mis à jour avec succès');
+}
 
 
 
