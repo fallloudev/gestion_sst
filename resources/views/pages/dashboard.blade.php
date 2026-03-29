@@ -51,8 +51,21 @@
             </div>
         </div>
     </div>
-
     <div class="col-xxl-3 col-md-6">
+        <div class="card">
+            <div class="card-body d-flex align-items-center">
+                <div class="flex-grow-1 me-3">
+                    <p class="mb-1 text-muted">Créances</p>
+                    <h4>{{ number_format($creances, 0, ',', ' ') }} FCFA</h4>
+                </div>
+                <div class="avtar avtar-l bg-light-danger rounded-circle">
+                    <i class="ph-duotone ph-warning f-28"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+    {{-- <div class="col-xxl-3 col-md-6">
         <div class="card">
             <div class="card-body d-flex align-items-center">
                 <div class="flex-grow-1 me-3">
@@ -65,9 +78,11 @@
             </div>
         </div>
     </div>
-</div>
+</div> --}}
 
-<div class="row">
+<br><br><br>
+
+{{-- <div class="row">
     <div class="col-xxl-3 col-md-6">
         <div class="card">
             <div class="card-body">
@@ -516,7 +531,7 @@
             </div>
         </div>
     </div>
-</div>
+</div> --}}
 @endif
 
 @if ($mode === 'PRODUCTION')

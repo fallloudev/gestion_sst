@@ -45,14 +45,23 @@ class DashboardController extends Controller
     {
         return view('pages.dashboard', [
             'mode' => 'ADMIN',
+    
+            // 📊 GLOBAL
             'clients' => Client::count(),
             'commandes' => Commande::count(),
             'factures' => Facture::count(),
+    
+            // 💰 CHIFFRE D’AFFAIRES (factures payées)
             'ca' => Paiement::sum('montant'),
+    
+            // 🧾 CRÉANCES (factures non payées)
+            'creances' => Facture::where('statut', Constant::FACTURE['NO_PAYEE'])
+                ->sum('total_ttc'),
+    
+            // 📦 STOCK CRITIQUE
             'stocksCritiques' => Stock::where('quantite', '<=', 10)->count(),
         ]);
     }
-
     private function productionDashboard()
     {
         return view('pages.dashboard', [
